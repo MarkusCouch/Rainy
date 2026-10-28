@@ -22,7 +22,6 @@ import {
   chooseForecastZoom,
   rainRateClass
 } from "./forecast.js";
-import { createBottomSheet } from "./sheet.js";
 import { buildForecastPaths, forecastEvent } from "./presentation.js";
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -115,15 +114,6 @@ if (webgl2Canvas.getContext("webgl2")) {
 
 map.attributionControl.addAttribution("OpenFreeMap &copy; OpenMapTiles · Daten &copy; OpenStreetMap-Mitwirkende");
 
-const sheetController = createBottomSheet(elements.bottomSheet, elements.sheetHandle, {
-  initialState: "collapsed",
-  peekHeight: () => Math.max(104, elements.bottomSheet.querySelector(".sheet-topline").offsetHeight + 48),
-  onStateChange(name) {
-    elements.app.classList.toggle("sheet-compact", name === "compact");
-    elements.app.classList.toggle("sheet-collapsed", name === "collapsed");
-    elements.sheetDetails.inert = name === "collapsed";
-  }
-});
 
 function setLiveState(stateName, text) {
   elements.liveBadge.dataset.state = stateName;
@@ -316,7 +306,6 @@ function openForecast(trigger) {
     if (child !== elements.forecastView && child !== elements.toast) child.inert = true;
   });
   elements.forecastLocation.textContent = state.positionSource === "manual" ? "Gewählter Standort" : "Mein Standort";
-  sheetController.collapse();
   renderForecast();
   requestAnimationFrame(() => elements.closeForecastBtn.focus());
 }
@@ -391,37 +380,21 @@ function renderMotion(motion) {
   const timeline = Array.from({ length: 69 }, (_, index) => (
     destinationPoint(geometry.position, geometry.sourceBearing, motion.speedKmh * index / 16)
   ));
-  const confidence = Math.max(0, Math.min(1, motion.confidence ?? 0.5));
-
   L.polyline(timeline, {
-    color: "#64d2ff",
-    opacity: 0.1 + (1 - confidence) * 0.11,
-    weight: 13 + (1 - confidence) * 20,
-    lineCap: "round",
-    interactive: false
-  }).addTo(layer);
-
-  L.polyline(timeline, {
-    color: "#06100f",
-    opacity: 0.78,
-    weight: 8,
+    color: "#ffffff",
+    opacity: 0.7,
+    weight: 4,
     lineCap: "round",
     lineJoin: "round",
     interactive: false
   }).addTo(layer);
 
-  const colors = [[0, 244, 90], [0, 216, 121], [40, 207, 214], [89, 107, 230], [163, 77, 225]];
   timeline.slice(0, -1).forEach((point, index) => {
     const hour = Math.min(4, index / 16);
-    const colorIndex = Math.min(3, Math.floor(hour));
-    const blend = hour - colorIndex;
-    const color = colors[colorIndex].map((value, channel) => (
-      Math.round(value + (colors[colorIndex + 1][channel] - value) * blend)
-    ));
     L.polyline([point, timeline[index + 1]], {
-      color: `rgb(${color.join(",")})`,
-      opacity: (0.75 + confidence * 0.25) * (1 - hour * 0.1),
-      weight: 5.2 - hour * 0.45,
+      color: "#253238",
+      opacity: 0.9 - hour * 0.06,
+      weight: 2,
       lineCap: "round",
       lineJoin: "round",
       interactive: false
@@ -430,7 +403,7 @@ function renderMotion(motion) {
 
   const arrowIcon = L.divIcon({
     className: "",
-    html: `<div class="motion-arrow-tip" style="--bearing:${motion.bearing}deg"><svg viewBox="0 0 40 30" aria-hidden="true"><path class="tip-halo" d="M20 2 36 26 20 19 4 26Z"></path><path class="tip-core" d="M20 2 36 26 20 19 4 26Z"></path></svg></div>`,
+    html: `<div class="motion-arrow-tip" style="--bearing:${motion.bearing}deg"><svg viewBox="0 0 40 30" aria-hidden="true"><path class="tip-halo" d="m12 14 8-10 8 10"></path><path class="tip-core" d="m12 14 8-10 8 10"></path></svg></div>`,
     iconSize: [40, 28],
     iconAnchor: [20, 4]
   });
@@ -466,9 +439,7 @@ function renderMotion(motion) {
 
 function fitMotionBounds(force = true) {
   if (!state.motionGeometry) return;
-  const offset = Number.parseFloat(elements.bottomSheet.style.getPropertyValue("--sheet-offset")) || 0;
-  const dock = Number.parseFloat(getComputedStyle(elements.bottomSheet).bottom) || 78;
-  const bottomPadding = elements.bottomSheet.offsetHeight - offset + dock + 28;
+  const bottomPadding = 108;
   const bounds = L.latLngBounds([
     state.motionGeometry.tailPoint ?? state.motionGeometry.point4,
     state.motionGeometry.point4,
@@ -577,7 +548,6 @@ async function updateRadar({ force = false } = {}) {
     if (!motion.ok) {
       clearMotion();
       elements.motionDetail.textContent = reasonText[motion.reason] ?? "Die Bewegung ist momentan nicht eindeutig.";
-      sheetController.refresh();
       return;
     }
 
@@ -587,7 +557,6 @@ async function updateRadar({ force = false } = {}) {
     elements.movementTitle.hidden = false;
     elements.movementTitle.textContent = `Regen zieht nach ${movementDirection}`;
     elements.motionDetail.textContent = `Aus ${sourceDirection} · ${Math.round(motion.speedKmh)} km/h · Musterqualität ${Math.round(motion.confidence * 100)} %`;
-    sheetController.refresh();
   } catch (error) {
     console.error(error);
     setLiveState("error", navigator.onLine ? "Fehler" : "Offline");
@@ -704,9 +673,8 @@ elements.locateBtn.addEventListener("click", locate);
 elements.centerBtn.addEventListener("click", () => {
   if (state.position) map.setView(state.position, Math.max(8, map.getZoom()), { animate: true });
 });
-elements.moreBtn.addEventListener("click", () => sheetController.expand());
+elements.moreBtn.addEventListener("click", () => state.picking ? stopPicking() : startPicking());
 elements.chartBtn.addEventListener("click", (event) => openForecast(event.currentTarget));
-elements.mapRadarTab.addEventListener("click", () => sheetController.collapse());
 elements.openForecastBtn.addEventListener("click", (event) => openForecast(event.currentTarget));
 elements.closeForecastBtn.addEventListener("click", closeForecast);
 elements.forecastRadarBtn.addEventListener("click", closeForecast);

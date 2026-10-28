@@ -58,7 +58,7 @@ a:focus-visible { outline: 2px solid var(--ui-soft); outline-offset: 3px; }
 .leaflet-overlay-pane { filter: none; }
 .rainy-radar-tile { image-rendering: pixelated; image-rendering: crisp-edges; }
 .leaflet-control-attribution {
-  margin-bottom: 322px !important;
+  margin-bottom: 80px !important;
   border-radius: 9px 0 0 0;
   background: rgba(239, 243, 244, 0.82) !important;
   color: #344042;
@@ -432,8 +432,8 @@ button:disabled { cursor: wait; opacity: 0.55; }
 .motion-arrow-tip { width: 40px; height: 30px; transform: rotate(var(--bearing)); transform-origin: 20px 4px; pointer-events: none; }
 .motion-arrow-tip svg { display: block; width: 40px; height: 30px; overflow: visible; }
 .motion-arrow-tip path { stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.motion-arrow-tip .tip-halo { fill: rgba(247, 251, 250, 0.96); stroke: rgba(247, 251, 250, 0.96); stroke-width: 5; }
-.motion-arrow-tip .tip-core { fill: #07100f; stroke: var(--medium); stroke-width: 2.4; }
+.motion-arrow-tip .tip-halo { fill: none; stroke: rgba(255, 255, 255, 0.8); stroke-width: 4; }
+.motion-arrow-tip .tip-core { fill: none; stroke: #253238; stroke-width: 2; }
 
 .motion-timeline-marker {
   --node-color: var(--medium);
@@ -448,13 +448,13 @@ button:disabled { cursor: wait; opacity: 0.55; }
   left: 44px;
   top: 21px;
   display: block;
-  width: 12px;
-  height: 12px;
+  width: 6px;
+  height: 6px;
   transform: translate(-50%, -50%);
-  border: 2px solid rgba(255, 255, 255, 0.92);
+  border: 1px solid #fff;
   border-radius: 50%;
-  background: var(--node-color);
-  box-shadow: 0 0 0 4px rgba(5, 9, 10, 0.68), 0 4px 12px rgba(0, 0, 0, 0.25);
+  background: #253238;
+  box-shadow: none;
 }
 .motion-timeline-marker b {
   position: absolute;
@@ -463,13 +463,12 @@ button:disabled { cursor: wait; opacity: 0.55; }
   min-width: 40px;
   padding: 4px 7px 3px;
   transform: translateX(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-  color: #f7fbfa;
-  background: rgba(5, 9, 10, 0.86);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.23);
-  backdrop-filter: blur(9px);
-  -webkit-backdrop-filter: blur(9px);
+  border: 0;
+  border-radius: 0;
+  color: #253238;
+  background: transparent;
+  box-shadow: none;
+  text-shadow: 0 1px 2px #fff, 1px 0 2px #fff, -1px 0 2px #fff, 0 -1px 2px #fff;
   font-size: 10px;
   font-weight: 760;
   line-height: 1;
