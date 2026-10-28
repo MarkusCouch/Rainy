@@ -12,6 +12,7 @@ import {
   analyzeMotion,
   bearingToCompass,
   computeTimelineGeometry,
+  destinationPoint,
   haversineKm
 } from "./motion.js";
 import {
@@ -304,6 +305,7 @@ function clearMotion() {
   state.motionLayer?.remove();
   state.motionLayer = null;
   state.motionGeometry = null;
+  state.userMarker?.setOpacity(1);
   elements.fitArrowBtn.hidden = true;
   elements.scaleCard.hidden = true;
 }
@@ -311,56 +313,51 @@ function clearMotion() {
 function renderMotion(motion) {
   clearMotion();
   const geometry = computeTimelineGeometry(state.position, motion.bearing, motion.speedKmh);
+  geometry.tailPoint = destinationPoint(
+    geometry.point4,
+    geometry.sourceBearing,
+    geometry.distance4 * 0.08
+  );
   const layer = L.layerGroup();
+  const timeline = [geometry.tailPoint, geometry.point4, geometry.point2, geometry.position];
 
-  L.polyline([geometry.point2, geometry.position], {
-    color: "#06100d",
-    opacity: 0.74,
-    weight: 10,
-    lineCap: "round",
-    interactive: false
-  }).addTo(layer);
-  L.polyline([geometry.point2, geometry.position], {
-    color: "#66f2ae",
-    opacity: 0.96,
+  L.polyline(timeline, {
+    color: "#edf5f0",
+    opacity: 0.82,
     weight: 6,
     lineCap: "round",
+    lineJoin: "round",
     interactive: false
   }).addTo(layer);
-
-  L.polyline([geometry.point4, geometry.point2], {
-    color: "#06100d",
-    opacity: 0.62,
-    weight: 9,
-    dashArray: "12 10",
+  L.polyline(timeline, {
+    color: "#27332e",
+    opacity: 0.98,
+    weight: 4,
     lineCap: "round",
-    interactive: false
-  }).addTo(layer);
-  L.polyline([geometry.point4, geometry.point2], {
-    color: "#66f2ae",
-    opacity: 0.72,
-    weight: 5,
-    dashArray: "11 11",
-    lineCap: "round",
+    lineJoin: "round",
     interactive: false
   }).addTo(layer);
 
   const arrowIcon = L.divIcon({
     className: "",
-    html: `<div class="motion-arrow-head" style="--bearing:${motion.bearing}deg"><svg viewBox="0 0 42 68" aria-hidden="true"><path d="M21 1 L40 24 L29 21 L29 66 L13 66 L13 21 L2 24 Z"></path></svg></div>`,
-    iconSize: [42, 68],
-    iconAnchor: [21, 1]
+    html: `<div class="motion-arrow-tip" style="--bearing:${motion.bearing}deg"><svg viewBox="0 0 40 28" aria-hidden="true"><path class="tip-halo" d="M5 20 L20 3 L35 20"></path><path class="tip-core" d="M5 20 L20 3 L35 20"></path></svg></div>`,
+    iconSize: [40, 28],
+    iconAnchor: [20, 3]
   });
-  L.marker(geometry.position, { icon: arrowIcon, interactive: false, zIndexOffset: 1100 }).addTo(layer);
+  L.marker(geometry.position, { icon: arrowIcon, interactive: false, zIndexOffset: 1300 }).addTo(layer);
+  state.userMarker?.setOpacity(0);
 
-  for (const [point, label] of [[geometry.point2, "+2 h"], [geometry.point4, "+4 h"]]) {
+  for (const [point, label, markerClass] of [
+    [geometry.point2, "+2h", "tick-2"],
+    [geometry.point4, "+4h", "tick-4"]
+  ]) {
     const icon = L.divIcon({
       className: "",
-      html: `<div class="hour-marker"><i></i><b>${label}</b></div>`,
-      iconSize: [66, 24],
-      iconAnchor: [5, 12]
+      html: `<div class="motion-timeline-marker ${markerClass}" style="--bearing:${motion.bearing}deg"><i></i><b>${label}</b></div>`,
+      iconSize: [88, 68],
+      iconAnchor: [44, 21]
     });
-    L.marker(point, { icon, interactive: false, zIndexOffset: 1050 }).addTo(layer);
+    L.marker(point, { icon, interactive: false, zIndexOffset: 1250 }).addTo(layer);
   }
 
   layer.addTo(map);
@@ -378,6 +375,7 @@ function fitMotionBounds(force = true) {
   const sheetState = sheetController.getState();
   const mobileBottomPadding = sheetState === "expanded" ? 285 : sheetState === "compact" ? 165 : 92;
   const bounds = L.latLngBounds([
+    state.motionGeometry.tailPoint ?? state.motionGeometry.point4,
     state.motionGeometry.point4,
     state.motionGeometry.point2,
     state.motionGeometry.position
@@ -385,7 +383,7 @@ function fitMotionBounds(force = true) {
   map.fitBounds(bounds, {
     paddingTopLeft: [48, 110],
     paddingBottomRight: [48, window.innerWidth < 760 ? mobileBottomPadding : 80],
-    maxZoom: 9,
+    maxZoom: 10,
     animate: force
   });
 }
