@@ -17,7 +17,7 @@ export function chooseSheetSnap(offset, snaps, velocity = 0) {
   return snaps[Math.max(0, nearestIndex - 1)];
 }
 
-export function createBottomSheet(sheet, handle, { onStateChange } = {}) {
+export function createBottomSheet(sheet, handle, { onStateChange, initialState = "expanded" } = {}) {
   let snaps = sheetSnapPoints(sheet.getBoundingClientRect().height);
   let snapIndex = 0;
   let offset = snaps[snapIndex];
@@ -110,7 +110,7 @@ export function createBottomSheet(sheet, handle, { onStateChange } = {}) {
   });
 
   new ResizeObserver(refresh).observe(sheet);
-  commit(snaps[0]);
+  commit(initialState === "collapsed" ? snaps.at(-1) : snaps[0]);
 
   return {
     collapse: () => commit(snaps.at(-1)),

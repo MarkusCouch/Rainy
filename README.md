@@ -5,13 +5,15 @@ Rainy ist eine mobile, installierbare Regenradar-PWA. Sie verwendet ausschließl
 ## Funktionen
 
 - aktuelle GPS-Position mit schneller Erstbestimmung und präziser Aktualisierung
-- pixeliges Live-Radar in fünf Intensitätsklassen
+- reduzierte helle OpenFreeMap-Karte mit schwarzem App-Chrome und fester Radar/Verlauf-Navigation
+- pixeliges Live-Radar in fünf klar getrennten Intensitätsklassen von Grün über Cyan bis Violett
 - Bewegungsanalyse aus den letzten drei RainViewer-Radarständen
 - Herkunftsrichtung und Geschwindigkeit vorhandener Regengebiete
 - geografisch skalierte `+2 h`- und `+4 h`-Marken
 - automatischer Kartenmaßstab, der die vollständige Vier-Stunden-Strecke zeigt
 - antippbarer Regenverlauf in 15-Minuten-Schritten bis `+4 h`, inklusive geschätzter Regenrate in `mm/h`
 - herunterziehbares Infofenster mit drei Rastpositionen
+- einheitliche SVG-Icons und ein vollbreites, iOS-artiges Bottom-Sheet
 - PWA-Installation und grundlegender Offline-Fallback
 - automatische Veröffentlichung über GitHub Pages
 

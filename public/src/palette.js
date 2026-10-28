@@ -21,11 +21,11 @@ UNIVERSAL_BLUE.forEach((hex, index) => {
 });
 
 export const RADAR_CLASSES = [
-  { max: 9, color: [155, 231, 160], alpha: 104, label: "schwaches Echo" },
-  { max: 19, color: [35, 201, 107], alpha: 174, label: "leicht / Niesel" },
-  { max: 34, color: [244, 209, 61], alpha: 194, label: "mäßig" },
-  { max: 44, color: [242, 140, 40], alpha: 210, label: "stark" },
-  { max: Infinity, color: [234, 59, 53], alpha: 224, label: "sehr stark" }
+  { max: 9, color: [0, 244, 90], alpha: 132, label: "schwaches Echo" },
+  { max: 19, color: [0, 216, 121], alpha: 178, label: "leicht / Niesel" },
+  { max: 34, color: [40, 207, 214], alpha: 202, label: "mäßig" },
+  { max: 44, color: [89, 107, 230], alpha: 218, label: "stark" },
+  { max: Infinity, color: [163, 77, 225], alpha: 232, label: "sehr stark" }
 ];
 
 export function rgbToDbz(r, g, b, alpha = 255) {

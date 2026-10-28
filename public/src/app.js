@@ -31,6 +31,8 @@ const elements = {
   app: document.querySelector("#app"),
   liveBadge: document.querySelector("#liveBadge"),
   liveText: document.querySelector("#liveText"),
+  locationTitle: document.querySelector("#locationTitle"),
+  mapTime: document.querySelector("#mapTime span"),
   radarTime: document.querySelector("#radarTime"),
   motionTitle: document.querySelector("#motionTitle"),
   motionDetail: document.querySelector("#motionDetail"),
@@ -38,7 +40,9 @@ const elements = {
   speedValue: document.querySelector("#speedValue"),
   distanceValue: document.querySelector("#distanceValue"),
   locateBtn: document.querySelector("#locateBtn"),
+  moreBtn: document.querySelector("#moreBtn"),
   chartBtn: document.querySelector("#chartBtn"),
+  mapRadarTab: document.querySelector("#mapRadarTab"),
   fitArrowBtn: document.querySelector("#fitArrowBtn"),
   refreshBtn: document.querySelector("#refreshBtn"),
   pickBtn: document.querySelector("#pickBtn"),
@@ -92,7 +96,7 @@ const map = L.map("map", {
 const webgl2Canvas = document.createElement("canvas");
 if (webgl2Canvas.getContext("webgl2")) {
   maplibreGL({
-    style: "https://tiles.openfreemap.org/styles/fiord",
+    style: "https://tiles.openfreemap.org/styles/positron",
     attributionControl: false
   }).addTo(map);
 } else {
@@ -102,6 +106,7 @@ if (webgl2Canvas.getContext("webgl2")) {
 map.attributionControl.addAttribution("OpenFreeMap &copy; OpenMapTiles · Daten &copy; OpenStreetMap-Mitwirkende");
 
 const sheetController = createBottomSheet(elements.bottomSheet, elements.sheetHandle, {
+  initialState: "collapsed",
   onStateChange(name) {
     elements.app.classList.toggle("sheet-compact", name === "compact");
     elements.app.classList.toggle("sheet-collapsed", name === "collapsed");
@@ -133,6 +138,13 @@ function formatRadarTime(timestamp) {
     hour: "2-digit",
     minute: "2-digit",
     timeZoneName: "short"
+  }).format(new Date(timestamp * 1000));
+}
+
+function formatClockTime(timestamp) {
+  return new Intl.DateTimeFormat("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit"
   }).format(new Date(timestamp * 1000));
 }
 
@@ -193,8 +205,10 @@ function selectForecastSample(index) {
   elements.forecastSelectedRate.textContent = formatRainRate(sample.rateMmh);
   elements.forecastSelectedClass.textContent = rainClassText[sample.className] ?? "Radarwert";
   elements.forecastBars.querySelectorAll(".forecast-bar").forEach((bar, barIndex) => {
-    bar.classList.toggle("is-selected", barIndex === safeIndex);
-    bar.setAttribute("aria-pressed", String(barIndex === safeIndex));
+    const selected = barIndex === safeIndex;
+    bar.classList.toggle("is-selected", selected);
+    if (selected) bar.setAttribute("aria-current", "time");
+    else bar.removeAttribute("aria-current");
   });
 }
 
@@ -226,7 +240,6 @@ function renderForecast() {
     bar.className = "forecast-bar";
     bar.dataset.class = sample.className;
     bar.style.setProperty("--level", `${Math.max(sample.level || 0.006, 0.006) * 100}%`);
-    bar.setAttribute("aria-pressed", "false");
     bar.setAttribute(
       "aria-label",
       `${formatChartTime(sample.timestamp)}, ${formatRainRate(sample.rateMmh)}, ${rainClassText[sample.className] ?? "unbekannt"}`
@@ -253,7 +266,7 @@ function renderForecast() {
 function openForecast(trigger) {
   state.forecastReturnFocus = trigger ?? document.activeElement;
   elements.forecastView.hidden = false;
-  elements.forecastLocation.textContent = state.positionSource === "manual" ? "Gewählter Standort" : "Aktueller Standort";
+  elements.forecastLocation.textContent = state.positionSource === "manual" ? "Gewählter Standort" : "Mein Standort";
   sheetController.collapse();
   renderForecast();
   requestAnimationFrame(() => elements.closeForecastBtn.focus());
@@ -277,7 +290,9 @@ function setPosition(position, source, { center = false, accuracy = null } = {})
   const normalized = { lat: Number(position.lat), lng: Number(position.lng) };
   state.position = normalized;
   state.positionSource = source;
-  elements.forecastLocation.textContent = source === "manual" ? "Gewählter Standort" : "Aktueller Standort";
+  const locationLabel = source === "manual" ? "Gewählter Standort" : "Mein Standort";
+  elements.locationTitle.textContent = locationLabel;
+  elements.forecastLocation.textContent = locationLabel;
 
   if (!state.userMarker) {
     state.userMarker = L.marker(normalized, { icon: markerIcon(), zIndexOffset: 1200 }).addTo(map);
@@ -289,10 +304,10 @@ function setPosition(position, source, { center = false, accuracy = null } = {})
   if (accuracy && accuracy < 10000) {
     state.accuracyCircle = L.circle(normalized, {
       radius: accuracy,
-      color: "#66f2ae",
+      color: "#0a84ff",
       weight: 1,
       opacity: 0.35,
-      fillColor: "#66f2ae",
+      fillColor: "#0a84ff",
       fillOpacity: 0.06,
       interactive: false
     }).addTo(map);
@@ -373,7 +388,7 @@ function renderMotion(motion) {
 function fitMotionBounds(force = true) {
   if (!state.motionGeometry) return;
   const sheetState = sheetController.getState();
-  const mobileBottomPadding = sheetState === "expanded" ? 285 : sheetState === "compact" ? 165 : 92;
+  const mobileBottomPadding = sheetState === "expanded" ? 330 : sheetState === "compact" ? 225 : 145;
   const bounds = L.latLngBounds([
     state.motionGeometry.tailPoint ?? state.motionGeometry.point4,
     state.motionGeometry.point4,
@@ -454,6 +469,7 @@ async function updateRadar({ force = false } = {}) {
     state.radarLayer.setZIndex(350);
 
     elements.radarTime.textContent = `Radar ${formatRadarTime(latest.time)} · ${dataAgeMinutes(latest.time)} min alt`;
+    elements.mapTime.textContent = formatClockTime(latest.time);
     const fields = await loadMotionFields(metadata.host, frames, state.position);
     const motion = analyzeMotion(fields, {
       latitude: state.position.lat,
@@ -544,6 +560,7 @@ function startPreciseWatch() {
 
 async function locate() {
   setLiveState("loading", "GPS");
+  elements.locationTitle.textContent = "Standort wird gesucht";
   elements.motionTitle.textContent = "Position wird bestimmt …";
   elements.motionDetail.textContent = "Zuerst schnell, anschließend präziser im Hintergrund.";
   try {
@@ -555,6 +572,7 @@ async function locate() {
     startPreciseWatch();
   } catch (error) {
     setLiveState("error", "Standort fehlt");
+    elements.locationTitle.textContent = "Standort wählen";
     elements.motionTitle.textContent = "Standort auf der Karte wählen";
     elements.motionDetail.textContent = geolocationErrorMessage(error);
     showToast(geolocationErrorMessage(error), 6000);
@@ -588,7 +606,9 @@ map.on("click", async (event) => {
 });
 
 elements.locateBtn.addEventListener("click", locate);
+elements.moreBtn.addEventListener("click", () => sheetController.expand());
 elements.chartBtn.addEventListener("click", (event) => openForecast(event.currentTarget));
+elements.mapRadarTab.addEventListener("click", () => sheetController.collapse());
 elements.openForecastBtn.addEventListener("click", (event) => openForecast(event.currentTarget));
 elements.closeForecastBtn.addEventListener("click", closeForecast);
 elements.forecastRadarBtn.addEventListener("click", closeForecast);

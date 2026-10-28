@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#07110f" />
+    <meta name="theme-color" content="#000000" />
     <meta name="description" content="Aktuelles Regenradar mit Zugrichtung, skalierter +2h/+4h-Zeitachse und 4-Stunden-Regenverlauf." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -28,37 +28,40 @@
       <div id="map" aria-label="Regenradarkarte"></div>
 
       <header class="app-header">
-        <div class="brand" aria-label="Rainy">
-          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span>Rainy</span>
+        <button id="locateBtn" class="chrome-button" type="button" aria-label="Aktuelle Position bestimmen" title="Aktuelle Position">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 10.8 20.5 3.5 13.2 20.5l-2.1-7.6-7.6-2.1Z"></path></svg>
+        </button>
+        <div class="app-title">
+          <h1 id="locationTitle">Rainy</h1>
+          <div id="liveBadge" class="live-badge" data-state="loading">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span id="liveText">Startet …</span>
+          </div>
         </div>
-        <div id="liveBadge" class="live-badge" data-state="loading">
-          <span class="live-dot" aria-hidden="true"></span>
-          <span id="liveText">Startet …</span>
-        </div>
+        <button id="moreBtn" class="chrome-button" type="button" aria-label="Radarinformationen öffnen" title="Radarinformationen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.7"></circle><circle cx="12" cy="12" r="1.7"></circle><circle cx="19" cy="12" r="1.7"></circle></svg>
+        </button>
       </header>
 
+      <div id="mapTime" class="map-time" aria-label="Radarzeit">
+        <span>–:–</span>
+      </div>
+
       <div class="map-actions" aria-label="Kartenaktionen">
-        <button id="locateBtn" class="icon-button" type="button" aria-label="Aktuelle Position bestimmen" title="Aktuelle Position">
-          <span aria-hidden="true">◎</span>
-        </button>
-        <button id="chartBtn" class="icon-button chart-button" type="button" aria-label="Regenverlauf bis vier Stunden anzeigen" title="4-h-Regenverlauf">
-          <span class="mini-bars" aria-hidden="true"><i></i><i></i><i></i></span>
-        </button>
-        <button id="fitArrowBtn" class="icon-button" type="button" aria-label="Zeitpfeil vollständig zeigen" title="Zeitpfeil zeigen" hidden>
-          <span aria-hidden="true">↗</span>
+        <button id="fitArrowBtn" class="map-button" type="button" aria-label="Zeitpfeil vollständig zeigen" title="Zeitpfeil zeigen" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"></path></svg>
         </button>
       </div>
 
-      <section id="bottomSheet" class="bottom-sheet" aria-live="polite" data-sheet-state="expanded">
-        <button id="sheetHandle" class="sheet-handle" type="button" aria-controls="bottomSheet" aria-expanded="true" aria-label="Fenster nach unten ziehen"></button>
+      <section id="bottomSheet" class="bottom-sheet" aria-live="polite" data-sheet-state="collapsed">
+        <button id="sheetHandle" class="sheet-handle" type="button" aria-controls="bottomSheet" aria-expanded="false" aria-label="Fenster nach oben ziehen"></button>
         <div class="sheet-topline">
           <div>
             <p class="eyebrow" id="radarTime">Radar wird geladen</p>
-            <h1 id="motionTitle">Position wird bestimmt …</h1>
+            <h2 id="motionTitle">Position wird bestimmt …</h2>
           </div>
           <button id="refreshBtn" class="refresh-button" type="button" aria-label="Radardaten aktualisieren">
-            <span aria-hidden="true">↻</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5"></path><path d="M18.2 16.8A8 8 0 1 1 19.6 9"></path></svg>
           </button>
         </div>
         <p id="motionDetail" class="motion-detail">GPS funktioniert über die sichere GitHub-Pages-Adresse.</p>
@@ -96,17 +99,28 @@
         </div>
       </section>
 
+      <nav class="app-tabbar" aria-label="Hauptansicht wählen">
+        <button id="chartBtn" class="tab-item" type="button" aria-label="Regenverlauf bis vier Stunden anzeigen">
+          <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M4 24V13M10.5 24V8M17 24V4M23.5 24V10"></path><path class="tab-axis" d="M2 25.5h24"></path></svg>
+          <span>Verlauf</span>
+        </button>
+        <button id="mapRadarTab" class="tab-item is-active" type="button" aria-current="page">
+          <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11"></circle><circle cx="14" cy="14" r="7"></circle><circle cx="14" cy="14" r="3"></circle><path d="M14 3v22M3 14h22"></path></svg>
+          <span>Regenradar</span>
+        </button>
+      </nav>
+
       <section id="forecastView" class="forecast-view" role="dialog" aria-modal="true" aria-labelledby="forecastTitle" hidden>
         <header class="forecast-header">
           <button id="closeForecastBtn" class="forecast-icon-button" type="button" aria-label="Zur Radarkarte zurück">
-            <span aria-hidden="true">‹</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"></path></svg>
           </button>
           <div class="forecast-heading">
-            <p id="forecastLocation" class="forecast-location">Aktueller Standort</p>
-            <h2 id="forecastTitle">Regen bis +4 h</h2>
+            <h2 id="forecastLocation" class="forecast-location">Aktueller Standort</h2>
+            <p id="forecastTitle">Regen bis +4 h</p>
           </div>
           <button id="forecastRefreshBtn" class="forecast-icon-button" type="button" aria-label="Regenverlauf aktualisieren">
-            <span aria-hidden="true">↻</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5"></path><path d="M18.2 16.8A8 8 0 1 1 19.6 9"></path></svg>
           </button>
         </header>
 
@@ -130,7 +144,7 @@
               <span>Stark</span>
               <span>Mittel</span>
               <span>Schwach</span>
-              <span>Trocken</span>
+              <span>Null</span>
             </div>
             <div class="forecast-plot">
               <div class="forecast-grid" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -150,11 +164,11 @@
 
         <nav class="forecast-nav" aria-label="Ansicht wählen">
           <button class="forecast-nav-item is-active" type="button" aria-current="page">
-            <span class="nav-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+            <svg viewBox="0 0 28 28" aria-hidden="true"><path d="M4 24V13M10.5 24V8M17 24V4M23.5 24V10"></path><path d="M2 25.5h24"></path></svg>
             <b>Verlauf</b>
           </button>
           <button id="forecastRadarBtn" class="forecast-nav-item" type="button">
-            <span class="nav-radar" aria-hidden="true"></span>
+            <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="11"></circle><circle cx="14" cy="14" r="7"></circle><circle cx="14" cy="14" r="3"></circle><path d="M14 3v22M3 14h22"></path></svg>
             <b>Regenradar</b>
           </button>
         </nav>
