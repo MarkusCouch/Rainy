@@ -1,4 +1,4 @@
-const VERSION = "rainy-v1";
+const VERSION = "rainy-v2";
 const APP_CACHE = `${VERSION}-app`;
 const DATA_CACHE = `${VERSION}-data`;
 const TILE_CACHE = `${VERSION}-tiles`;
@@ -8,9 +8,11 @@ const APP_SHELL = [
   "./styles.css",
   "./manifest.webmanifest",
   "./src/app.js",
+  "./src/forecast.js",
   "./src/motion.js",
   "./src/palette.js",
   "./src/radar.js",
+  "./src/sheet.js",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];

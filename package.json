@@ -6,6 +6,6 @@
   "scripts": {
     "dev": "node scripts/serve.mjs",
     "test": "node --test",
-    "check": "node --check public/src/app.js && node --check public/src/motion.js && node --check public/src/radar.js && node --check public/src/palette.js && node --check public/sw.js"
+    "check": "node --check public/src/app.js && node --check public/src/forecast.js && node --check public/src/motion.js && node --check public/src/radar.js && node --check public/src/palette.js && node --check public/src/sheet.js && node --check public/sw.js"
   }
 }

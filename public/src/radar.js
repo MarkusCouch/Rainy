@@ -19,10 +19,10 @@ export function radarTileUrl(host, frame, coords, size = 256) {
   return `${host}${frame.path}/${size}/${coords.z}/${coords.x}/${coords.y}/2/0_0.png`;
 }
 
-export function analysisImageUrl(host, frame, position) {
+export function analysisImageUrl(host, frame, position, zoom = ANALYSIS_ZOOM) {
   const lat = Number(position.lat).toFixed(5);
   const lng = Number(position.lng).toFixed(5);
-  return `${host}${frame.path}/${ANALYSIS_SIZE}/${ANALYSIS_ZOOM}/${lat}/${lng}/2/0_0.png`;
+  return `${host}${frame.path}/${ANALYSIS_SIZE}/${zoom}/${lat}/${lng}/2/0_0.png`;
 }
 
 async function bitmapFromResponse(response) {
@@ -45,8 +45,8 @@ async function bitmapFromResponse(response) {
   });
 }
 
-export async function loadAnalysisField(host, frame, position) {
-  const response = await fetch(analysisImageUrl(host, frame, position), { cache: "force-cache" });
+export async function loadAnalysisField(host, frame, position, zoom = ANALYSIS_ZOOM) {
+  const response = await fetch(analysisImageUrl(host, frame, position, zoom), { cache: "force-cache" });
   const bitmap = await bitmapFromResponse(response);
   const canvas = document.createElement("canvas");
   canvas.width = ANALYSIS_SIZE;

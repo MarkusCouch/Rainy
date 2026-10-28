@@ -10,10 +10,12 @@ Rainy ist eine mobile, installierbare Regenradar-PWA. Sie verwendet ausschließl
 - Herkunftsrichtung und Geschwindigkeit vorhandener Regengebiete
 - geografisch skalierte `+2 h`- und `+4 h`-Marken
 - automatischer Kartenmaßstab, der die vollständige Vier-Stunden-Strecke zeigt
+- antippbarer Regenverlauf in 15-Minuten-Schritten bis `+4 h`, inklusive geschätzter Regenrate in `mm/h`
+- herunterziehbares Infofenster mit drei Rastpositionen
 - PWA-Installation und grundlegender Offline-Fallback
 - automatische Veröffentlichung über GitHub Pages
 
-Die Stundenmarken sind eine lineare Fortschreibung der beobachteten Bewegung und keine meteorologische Vorhersage. Bei zu wenig Niederschlag oder uneindeutiger Bewegung wird bewusst kein Pfeil angezeigt.
+Die Stundenmarken und der 4-h-Verlauf sind eine lineare Fortschreibung der beobachteten Bewegung und keine meteorologische Modellvorhersage. Die Regenrate wird mit der üblichen Radar-Näherung `Z = 200 · R^1,6` aus der Reflektivität abgeleitet. Bei uneindeutiger Bewegung zeigt die App bewusst nur den aktuellen Wert statt erfundener Zukunftswerte.
 
 ## Lokal starten
 
