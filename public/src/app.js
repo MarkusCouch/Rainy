@@ -280,7 +280,7 @@ function renderForecast() {
       if (!(event.key in offsets)) return;
       event.preventDefault();
       selectForecastSample(index + offsets[event.key]);
-      elements.forecastSamples.children[state.forecastSelectedIndex]?.focus();
+      elements.forecastSamples.children[state.forecastSelectedIndex]?.focus({ preventScroll: true });
     });
     const halfStep = 50 / Math.max(1, forecast.samples.length - 1);
     const center = (index / Math.max(1, forecast.samples.length - 1)) * 100;
