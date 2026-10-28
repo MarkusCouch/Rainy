@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07110f" />
+    <meta name="description" content="Aktuelles Regenradar mit Zugrichtung und skalierter +2h/+4h-Zeitachse." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Rainy" />
+    <title>Rainy · Regenradar</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.3.0/dist/maplibre-gl.css" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "leaflet": "https://unpkg.com/leaflet@1.9.4/dist/leaflet-src.esm.js",
+          "maplibre-gl": "https://unpkg.com/maplibre-gl@6.3.0/dist/maplibre-gl.mjs"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main id="app">
+      <div id="map" aria-label="Regenradarkarte"></div>
+
+      <header class="app-header">
+        <div class="brand" aria-label="Rainy">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>Rainy</span>
+        </div>
+        <div id="liveBadge" class="live-badge" data-state="loading">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span id="liveText">Startet …</span>
+        </div>
+      </header>
+
+      <div class="map-actions" aria-label="Kartenaktionen">
+        <button id="locateBtn" class="icon-button" type="button" aria-label="Aktuelle Position bestimmen" title="Aktuelle Position">
+          <span aria-hidden="true">◎</span>
+        </button>
+        <button id="fitArrowBtn" class="icon-button" type="button" aria-label="Zeitpfeil vollständig zeigen" title="Zeitpfeil zeigen" hidden>
+          <span aria-hidden="true">↗</span>
+        </button>
+      </div>
+
+      <section class="bottom-sheet" aria-live="polite">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-topline">
+          <div>
+            <p class="eyebrow" id="radarTime">Radar wird geladen</p>
+            <h1 id="motionTitle">Position wird bestimmt …</h1>
+          </div>
+          <button id="refreshBtn" class="refresh-button" type="button" aria-label="Radardaten aktualisieren">
+            <span aria-hidden="true">↻</span>
+          </button>
+        </div>
+        <p id="motionDetail" class="motion-detail">GPS funktioniert über die sichere GitHub-Pages-Adresse.</p>
+
+        <div id="scaleCard" class="scale-card" hidden>
+          <div class="scale-value">
+            <span id="speedValue">–</span>
+            <small>km/h</small>
+          </div>
+          <div class="scale-track" aria-label="Zeitskala der Regenbewegung">
+            <span class="scale-now">jetzt</span>
+            <span class="scale-line solid"></span>
+            <span class="scale-tick tick-2">+2 h</span>
+            <span class="scale-line dashed"></span>
+            <span class="scale-tick tick-4">+4 h</span>
+          </div>
+          <div class="scale-distance"><span id="distanceValue">–</span> km</div>
+        </div>
+
+        <div class="sheet-footer">
+          <div class="legend" aria-label="Radarintensität">
+            <span><i class="rain-weak"></i>&lt;10</span>
+            <span><i class="rain-light"></i>10–19</span>
+            <span><i class="rain-medium"></i>20–34</span>
+            <span><i class="rain-heavy"></i>35–44</span>
+            <span><i class="rain-extreme"></i>≥45 dBZ</span>
+          </div>
+          <div class="source-line">
+            <button id="pickBtn" type="button" class="text-button">Standort wählen</button>
+            <span aria-hidden="true">·</span>
+            <a href="https://www.rainviewer.com/" target="_blank" rel="noreferrer">Radar: RainViewer</a>
+          </div>
+        </div>
+      </section>
+
+      <div id="toast" class="toast" role="status" hidden></div>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

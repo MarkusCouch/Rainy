@@ -1,0 +1,28 @@
+{
+  "id": "./",
+  "name": "Rainy Regenradar",
+  "short_name": "Rainy",
+  "description": "Aktuelles Regenradar mit Zugrichtung und skalierter +2h/+4h-Zeitachse.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#07110f",
+  "theme_color": "#07110f",
+  "categories": ["weather", "travel"],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
