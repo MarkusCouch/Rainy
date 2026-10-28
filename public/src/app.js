@@ -23,6 +23,7 @@ import {
   rainRateClass
 } from "./forecast.js";
 import { createBottomSheet } from "./sheet.js";
+import { buildForecastPaths, forecastEvent } from "./presentation.js";
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_VIEW = [51.16, 10.45];
@@ -35,11 +36,14 @@ const elements = {
   mapTime: document.querySelector("#mapTime span"),
   radarTime: document.querySelector("#radarTime"),
   motionTitle: document.querySelector("#motionTitle"),
+  movementTitle: document.querySelector("#movementTitle"),
   motionDetail: document.querySelector("#motionDetail"),
+  trailHint: document.querySelector("#trailHint"),
   scaleCard: document.querySelector("#scaleCard"),
   speedValue: document.querySelector("#speedValue"),
   distanceValue: document.querySelector("#distanceValue"),
   locateBtn: document.querySelector("#locateBtn"),
+  centerBtn: document.querySelector("#centerBtn"),
   moreBtn: document.querySelector("#moreBtn"),
   chartBtn: document.querySelector("#chartBtn"),
   mapRadarTab: document.querySelector("#mapRadarTab"),
@@ -48,6 +52,7 @@ const elements = {
   pickBtn: document.querySelector("#pickBtn"),
   bottomSheet: document.querySelector("#bottomSheet"),
   sheetHandle: document.querySelector("#sheetHandle"),
+  sheetDetails: document.querySelector("#sheetDetails"),
   openForecastBtn: document.querySelector("#openForecastBtn"),
   forecastView: document.querySelector("#forecastView"),
   closeForecastBtn: document.querySelector("#closeForecastBtn"),
@@ -56,7 +61,12 @@ const elements = {
   forecastLocation: document.querySelector("#forecastLocation"),
   forecastSummary: document.querySelector("#forecastSummary"),
   forecastMeta: document.querySelector("#forecastMeta"),
-  forecastBars: document.querySelector("#forecastBars"),
+  forecastPlot: document.querySelector("#forecastPlot"),
+  forecastSamples: document.querySelector("#forecastSamples"),
+  forecastAreaPath: document.querySelector("#forecastAreaPath"),
+  forecastLinePath: document.querySelector("#forecastLinePath"),
+  forecastCursor: document.querySelector("#forecastCursor"),
+  forecastCursorDot: document.querySelector("#forecastCursorDot"),
   forecastTimes: document.querySelector("#forecastTimes"),
   forecastEmpty: document.querySelector("#forecastEmpty"),
   forecastSelectedTime: document.querySelector("#forecastSelectedTime"),
@@ -107,9 +117,11 @@ map.attributionControl.addAttribution("OpenFreeMap &copy; OpenMapTiles · Daten 
 
 const sheetController = createBottomSheet(elements.bottomSheet, elements.sheetHandle, {
   initialState: "collapsed",
+  peekHeight: () => Math.max(104, elements.bottomSheet.querySelector(".sheet-topline").offsetHeight + 48),
   onStateChange(name) {
     elements.app.classList.toggle("sheet-compact", name === "compact");
     elements.app.classList.toggle("sheet-collapsed", name === "collapsed");
+    elements.sheetDetails.inert = name === "collapsed";
   }
 });
 
@@ -184,14 +196,19 @@ const rainClassText = {
 };
 
 function forecastSummary(forecast) {
-  if (forecast.status === "unavailable") return "Zugrichtung nicht eindeutig";
-  if (forecast.maxRate < 0.1) return "Voraussichtlich trocken";
-  const peakIndex = forecast.samples.reduce((best, sample, index, samples) => (
-    (sample.rateMmh ?? -1) > (samples[best].rateMmh ?? -1) ? index : best
-  ), 0);
-  const peak = forecast.samples[peakIndex];
-  const className = rainRateClass(peak.rateMmh);
-  return `${rainClassText[className]} gegen ${formatChartTime(peak.timestamp)}`;
+  const event = forecastEvent(forecast);
+  const rain = rainClassText[rainRateClass(event.sample?.rateMmh)] ?? "Regen";
+  const rainTitle = rain.charAt(0).toUpperCase() + rain.slice(1);
+  switch (event.kind) {
+    case "current-dry": return "Hier ist es gerade trocken";
+    case "dry": return "Voraussichtlich 4 Stunden trocken";
+    case "partial-dry": return "Im auswertbaren Zeitraum trocken";
+    case "ending": return `${rainTitle} · bis etwa ${formatChartTime(event.until)}`;
+    case "ongoing": return `${rainTitle} hält vorerst an`;
+    case "starting": return `Regen ab etwa ${formatChartTime(event.sample.timestamp)}`;
+    case "uncertain": return "Ausblick derzeit unsicher";
+    default: return "Verlauf wird berechnet …";
+  }
 }
 
 function selectForecastSample(index) {
@@ -204,18 +221,32 @@ function selectForecastSample(index) {
     : `${formatChartTime(sample.timestamp)} · ${formatForecastOffset(sample.minutes)}`;
   elements.forecastSelectedRate.textContent = formatRainRate(sample.rateMmh);
   elements.forecastSelectedClass.textContent = rainClassText[sample.className] ?? "Radarwert";
-  elements.forecastBars.querySelectorAll(".forecast-bar").forEach((bar, barIndex) => {
-    const selected = barIndex === safeIndex;
-    bar.classList.toggle("is-selected", selected);
-    if (selected) bar.setAttribute("aria-current", "time");
-    else bar.removeAttribute("aria-current");
+  elements.forecastSamples.querySelectorAll(".forecast-sample").forEach((button, buttonIndex) => {
+    const selected = buttonIndex === safeIndex;
+    button.classList.toggle("is-selected", selected);
+    button.tabIndex = selected ? 0 : -1;
+    if (selected) button.setAttribute("aria-current", "time");
+    else button.removeAttribute("aria-current");
   });
+  const x = state.forecast.samples.length > 1 ? (safeIndex / (state.forecast.samples.length - 1)) * 100 : 0;
+  const y = 96 - Math.max(sample.level || 0, 0) * 88;
+  elements.forecastCursor.setAttribute("x1", x);
+  elements.forecastCursor.setAttribute("x2", x);
+  elements.forecastCursorDot.style.left = x <= 0
+    ? "6px"
+    : x >= 100 ? "calc(100% - 6px)" : `${x}%`;
+  elements.forecastCursorDot.style.top = `${y}%`;
+  elements.forecastCursorDot.hidden = !Number.isFinite(sample.rateMmh);
+  elements.forecastPlot.dataset.class = sample.className;
 }
 
 function renderForecast() {
   const forecast = state.forecast;
-  elements.forecastBars.replaceChildren();
+  elements.forecastSamples.replaceChildren();
   elements.forecastTimes.replaceChildren();
+  elements.forecastAreaPath.setAttribute("d", "");
+  elements.forecastLinePath.setAttribute("d", "");
+  elements.forecastCursorDot.hidden = true;
 
   if (!forecast?.samples?.length) {
     elements.forecastSummary.textContent = state.loading ? "Verlauf wird berechnet …" : "Noch keine Radardaten";
@@ -229,26 +260,41 @@ function renderForecast() {
 
   elements.forecastSummary.textContent = forecastSummary(forecast);
   elements.forecastMeta.textContent = forecast.method === "advection"
-    ? `${Math.round((forecast.confidence ?? 0) * 100)} % Zugmuster`
+    ? forecast.status === "partial" ? "teilweise auswertbar" : "bis +4 h"
     : forecast.method === "dry" ? "aktuell kein Echo" : "nur aktueller Wert";
   elements.forecastEmpty.hidden = forecast.status !== "unavailable";
 
-  const bars = document.createDocumentFragment();
+  const buttons = document.createDocumentFragment();
   forecast.samples.forEach((sample, index) => {
-    const bar = document.createElement("button");
-    bar.type = "button";
-    bar.className = "forecast-bar";
-    bar.dataset.class = sample.className;
-    bar.style.setProperty("--level", `${Math.max(sample.level || 0.006, 0.006) * 100}%`);
-    bar.setAttribute(
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "forecast-sample";
+    button.dataset.class = sample.className;
+    button.setAttribute(
       "aria-label",
       `${formatChartTime(sample.timestamp)}, ${formatRainRate(sample.rateMmh)}, ${rainClassText[sample.className] ?? "unbekannt"}`
     );
-    bar.innerHTML = "<i aria-hidden=\"true\"></i>";
-    bar.addEventListener("click", () => selectForecastSample(index));
-    bars.append(bar);
+    button.addEventListener("click", () => selectForecastSample(index));
+    button.addEventListener("keydown", (event) => {
+      const offsets = { ArrowLeft: -1, ArrowRight: 1, Home: -index, End: forecast.samples.length - index - 1 };
+      if (!(event.key in offsets)) return;
+      event.preventDefault();
+      selectForecastSample(index + offsets[event.key]);
+      elements.forecastSamples.children[state.forecastSelectedIndex]?.focus();
+    });
+    const halfStep = 50 / Math.max(1, forecast.samples.length - 1);
+    const center = (index / Math.max(1, forecast.samples.length - 1)) * 100;
+    const start = Math.max(0, center - halfStep);
+    const end = Math.min(100, center + halfStep);
+    button.style.left = `${start}%`;
+    button.style.width = `${end - start}%`;
+    buttons.append(button);
   });
-  elements.forecastBars.append(bars);
+  elements.forecastSamples.append(buttons);
+
+  const paths = buildForecastPaths(forecast.samples);
+  elements.forecastLinePath.setAttribute("d", paths.line);
+  elements.forecastAreaPath.setAttribute("d", paths.area);
 
   [0, 4, 8, 12, 16].forEach((index) => {
     const label = document.createElement("span");
@@ -266,6 +312,9 @@ function renderForecast() {
 function openForecast(trigger) {
   state.forecastReturnFocus = trigger ?? document.activeElement;
   elements.forecastView.hidden = false;
+  [...elements.app.children].forEach((child) => {
+    if (child !== elements.forecastView && child !== elements.toast) child.inert = true;
+  });
   elements.forecastLocation.textContent = state.positionSource === "manual" ? "Gewählter Standort" : "Mein Standort";
   sheetController.collapse();
   renderForecast();
@@ -274,6 +323,7 @@ function openForecast(trigger) {
 
 function closeForecast() {
   elements.forecastView.hidden = true;
+  [...elements.app.children].forEach((child) => { child.inert = false; });
   state.forecastReturnFocus?.focus?.();
 }
 
@@ -290,6 +340,7 @@ function setPosition(position, source, { center = false, accuracy = null } = {})
   const normalized = { lat: Number(position.lat), lng: Number(position.lng) };
   state.position = normalized;
   state.positionSource = source;
+  elements.centerBtn.hidden = false;
   const locationLabel = source === "manual" ? "Gewählter Standort" : "Mein Standort";
   elements.locationTitle.textContent = locationLabel;
   elements.forecastLocation.textContent = locationLabel;
@@ -323,6 +374,8 @@ function clearMotion() {
   state.userMarker?.setOpacity(1);
   elements.fitArrowBtn.hidden = true;
   elements.scaleCard.hidden = true;
+  elements.trailHint.hidden = true;
+  elements.movementTitle.hidden = true;
 }
 
 function renderMotion(motion) {
@@ -334,52 +387,78 @@ function renderMotion(motion) {
     geometry.distance4 * 0.08
   );
   const layer = L.layerGroup();
-  const timeline = [geometry.tailPoint, geometry.point4, geometry.point2, geometry.position];
+  // Densify the geographic arc; hourly nodes stay on the measured trajectory.
+  const timeline = Array.from({ length: 69 }, (_, index) => (
+    destinationPoint(geometry.position, geometry.sourceBearing, motion.speedKmh * index / 16)
+  ));
+  const confidence = Math.max(0, Math.min(1, motion.confidence ?? 0.5));
 
   L.polyline(timeline, {
-    color: "#edf5f0",
-    opacity: 0.82,
-    weight: 6,
+    color: "#64d2ff",
+    opacity: 0.1 + (1 - confidence) * 0.11,
+    weight: 13 + (1 - confidence) * 20,
     lineCap: "round",
-    lineJoin: "round",
     interactive: false
   }).addTo(layer);
+
   L.polyline(timeline, {
-    color: "#27332e",
-    opacity: 0.98,
-    weight: 4,
+    color: "#06100f",
+    opacity: 0.78,
+    weight: 8,
     lineCap: "round",
     lineJoin: "round",
     interactive: false
   }).addTo(layer);
+
+  const colors = [[0, 244, 90], [0, 216, 121], [40, 207, 214], [89, 107, 230], [163, 77, 225]];
+  timeline.slice(0, -1).forEach((point, index) => {
+    const hour = Math.min(4, index / 16);
+    const colorIndex = Math.min(3, Math.floor(hour));
+    const blend = hour - colorIndex;
+    const color = colors[colorIndex].map((value, channel) => (
+      Math.round(value + (colors[colorIndex + 1][channel] - value) * blend)
+    ));
+    L.polyline([point, timeline[index + 1]], {
+      color: `rgb(${color.join(",")})`,
+      opacity: (0.75 + confidence * 0.25) * (1 - hour * 0.1),
+      weight: 5.2 - hour * 0.45,
+      lineCap: "round",
+      lineJoin: "round",
+      interactive: false
+    }).addTo(layer);
+  });
 
   const arrowIcon = L.divIcon({
     className: "",
-    html: `<div class="motion-arrow-tip" style="--bearing:${motion.bearing}deg"><svg viewBox="0 0 40 28" aria-hidden="true"><path class="tip-halo" d="M5 20 L20 3 L35 20"></path><path class="tip-core" d="M5 20 L20 3 L35 20"></path></svg></div>`,
+    html: `<div class="motion-arrow-tip" style="--bearing:${motion.bearing}deg"><svg viewBox="0 0 40 30" aria-hidden="true"><path class="tip-halo" d="M20 2 36 26 20 19 4 26Z"></path><path class="tip-core" d="M20 2 36 26 20 19 4 26Z"></path></svg></div>`,
     iconSize: [40, 28],
-    iconAnchor: [20, 3]
+    iconAnchor: [20, 4]
   });
-  L.marker(geometry.position, { icon: arrowIcon, interactive: false, zIndexOffset: 1300 }).addTo(layer);
+  L.marker(geometry.position, { icon: arrowIcon, interactive: false, keyboard: false, zIndexOffset: 1300 }).addTo(layer);
   state.userMarker?.setOpacity(0);
 
-  for (const [point, label, markerClass] of [
-    [geometry.point2, "+2h", "tick-2"],
-    [geometry.point4, "+4h", "tick-4"]
+  for (const [point, label, markerClass, intermediate] of [
+    [geometry.point1, "+1 h", "tick-1", true],
+    [geometry.point2, "+2 h", "tick-2", false],
+    [geometry.point3, "+3 h", "tick-3", true],
+    [geometry.point4, "+4 h", "tick-4", false]
   ]) {
     const icon = L.divIcon({
       className: "",
-      html: `<div class="motion-timeline-marker ${markerClass}" style="--bearing:${motion.bearing}deg"><i></i><b>${label}</b></div>`,
+      html: `<div class="motion-timeline-marker ${markerClass}${intermediate ? " is-intermediate" : ""}"><i></i><b>${label}</b></div>`,
       iconSize: [88, 68],
       iconAnchor: [44, 21]
     });
-    L.marker(point, { icon, interactive: false, zIndexOffset: 1250 }).addTo(layer);
+    L.marker(point, { icon, interactive: false, keyboard: false, zIndexOffset: 1250 }).addTo(layer);
   }
 
   layer.addTo(map);
   state.motionLayer = layer;
   state.motionGeometry = geometry;
+  updateIntermediateMarkersVisibility();
   elements.fitArrowBtn.hidden = false;
   elements.scaleCard.hidden = false;
+  elements.trailHint.hidden = false;
   elements.speedValue.textContent = Math.round(motion.speedKmh);
   elements.distanceValue.textContent = Math.round(geometry.distance4);
   fitMotionBounds(false);
@@ -387,20 +466,31 @@ function renderMotion(motion) {
 
 function fitMotionBounds(force = true) {
   if (!state.motionGeometry) return;
-  const sheetState = sheetController.getState();
-  const mobileBottomPadding = sheetState === "expanded" ? 330 : sheetState === "compact" ? 225 : 145;
+  const offset = Number.parseFloat(elements.bottomSheet.style.getPropertyValue("--sheet-offset")) || 0;
+  const dock = Number.parseFloat(getComputedStyle(elements.bottomSheet).bottom) || 78;
+  const bottomPadding = elements.bottomSheet.offsetHeight - offset + dock + 28;
   const bounds = L.latLngBounds([
     state.motionGeometry.tailPoint ?? state.motionGeometry.point4,
     state.motionGeometry.point4,
+    state.motionGeometry.point3,
     state.motionGeometry.point2,
+    state.motionGeometry.point1,
     state.motionGeometry.position
   ]);
   map.fitBounds(bounds, {
     paddingTopLeft: [48, 110],
-    paddingBottomRight: [48, window.innerWidth < 760 ? mobileBottomPadding : 80],
+    paddingBottomRight: [48, Math.min(bottomPadding, window.innerHeight * 0.58)],
     maxZoom: 10,
     animate: force
   });
+}
+
+function updateIntermediateMarkersVisibility() {
+  const geometry = state.motionGeometry;
+  const spacing = geometry
+    ? map.latLngToContainerPoint(geometry.point1).distanceTo(map.latLngToContainerPoint(geometry.point2))
+    : 0;
+  map.getContainer().classList.toggle("show-intermediate-markers", map.getZoom() >= 8 && spacing >= 52);
 }
 
 const reasonText = {
@@ -482,18 +572,22 @@ async function updateRadar({ force = false } = {}) {
     state.lastAnalysisPosition = { ...state.position };
     setLiveState("live", navigator.onLine ? "Live" : "Cache");
     await updateForecastData(metadata, latest, fields, motion);
+    elements.motionTitle.textContent = forecastSummary(state.forecast);
 
     if (!motion.ok) {
       clearMotion();
-      elements.motionTitle.textContent = "Kein verlässlicher Bewegungspfeil";
       elements.motionDetail.textContent = reasonText[motion.reason] ?? "Die Bewegung ist momentan nicht eindeutig.";
+      sheetController.refresh();
       return;
     }
 
     renderMotion(motion);
+    const movementDirection = bearingToCompass(motion.bearing);
     const sourceDirection = bearingToCompass((motion.bearing + 180) % 360);
-    elements.motionTitle.textContent = `Regen kommt aus ${sourceDirection}`;
-    elements.motionDetail.textContent = `${Math.round(motion.speedKmh)} km/h · ${Math.round(motion.confidence * 100)} % Bewegungskonfidenz · +4 h entspricht ${Math.round(motion.speedKmh * 4)} km`;
+    elements.movementTitle.hidden = false;
+    elements.movementTitle.textContent = `Regen zieht nach ${movementDirection}`;
+    elements.motionDetail.textContent = `Aus ${sourceDirection} · ${Math.round(motion.speedKmh)} km/h · Musterqualität ${Math.round(motion.confidence * 100)} %`;
+    sheetController.refresh();
   } catch (error) {
     console.error(error);
     setLiveState("error", navigator.onLine ? "Fehler" : "Offline");
@@ -604,8 +698,12 @@ map.on("click", async (event) => {
   }
   await updateRadar({ force: true });
 });
+map.on("zoomend", updateIntermediateMarkersVisibility);
 
 elements.locateBtn.addEventListener("click", locate);
+elements.centerBtn.addEventListener("click", () => {
+  if (state.position) map.setView(state.position, Math.max(8, map.getZoom()), { animate: true });
+});
 elements.moreBtn.addEventListener("click", () => sheetController.expand());
 elements.chartBtn.addEventListener("click", (event) => openForecast(event.currentTarget));
 elements.mapRadarTab.addEventListener("click", () => sheetController.collapse());
@@ -619,6 +717,18 @@ elements.pickBtn.addEventListener("click", () => state.picking ? stopPicking() :
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !elements.forecastView.hidden) closeForecast();
+  if (event.key !== "Tab" || elements.forecastView.hidden) return;
+  const focusable = [...elements.forecastView.querySelectorAll("button:not(:disabled)")]
+    .filter((button) => button.tabIndex >= 0);
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last?.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first?.focus();
+  }
 });
 
 window.addEventListener("online", () => {

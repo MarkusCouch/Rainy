@@ -2,14 +2,14 @@
   "id": "./",
   "name": "Rainy Regenradar",
   "short_name": "Rainy",
-  "description": "Aktuelles Regenradar mit Zugrichtung und skalierter +2h/+4h-Zeitachse.",
+  "description": "Lokales Regenradar mit Forecast Trail, Stundenpunkten und Regenverlauf bis vier Stunden.",
   "lang": "de",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#050809",
+  "theme_color": "#050809",
   "categories": ["weather", "travel"],
   "icons": [
     {

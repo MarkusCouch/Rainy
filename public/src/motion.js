@@ -45,15 +45,21 @@ export function bearingToCompass(bearing) {
 
 export function computeTimelineGeometry(position, movementBearing, speedKmh) {
   const sourceBearing = (movementBearing + 180) % 360;
+  const distance1 = speedKmh;
   const distance2 = speedKmh * 2;
+  const distance3 = speedKmh * 3;
   const distance4 = speedKmh * 4;
   return {
     position,
     movementBearing,
     sourceBearing,
+    distance1,
     distance2,
+    distance3,
     distance4,
+    point1: destinationPoint(position, sourceBearing, distance1),
     point2: destinationPoint(position, sourceBearing, distance2),
+    point3: destinationPoint(position, sourceBearing, distance3),
     point4: destinationPoint(position, sourceBearing, distance4)
   };
 }

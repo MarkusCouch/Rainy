@@ -26,11 +26,15 @@ test("estimateShift erkennt eine synthetische Verschiebung", () => {
   assert.ok(shift.score > 0.95);
 });
 
-test("+2h/+4h-Skala bleibt geografisch proportional", () => {
+test("Stundenpunkte bis +4 h bleiben geografisch proportional", () => {
   const position = { lat: 48.137, lng: 11.575 };
   const geometry = computeTimelineGeometry(position, 120, 30);
+  assert.ok(Math.abs(haversineKm(position, geometry.point1) - 30) < 0.2);
   assert.ok(Math.abs(haversineKm(position, geometry.point2) - 60) < 0.2);
+  assert.ok(Math.abs(haversineKm(position, geometry.point3) - 90) < 0.2);
   assert.ok(Math.abs(haversineKm(position, geometry.point4) - 120) < 0.2);
+  assert.equal(geometry.distance1, 30);
   assert.equal(geometry.distance2, 60);
+  assert.equal(geometry.distance3, 90);
   assert.equal(geometry.distance4, 120);
 });

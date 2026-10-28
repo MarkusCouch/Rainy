@@ -17,8 +17,13 @@ export function chooseSheetSnap(offset, snaps, velocity = 0) {
   return snaps[Math.max(0, nearestIndex - 1)];
 }
 
-export function createBottomSheet(sheet, handle, { onStateChange, initialState = "expanded" } = {}) {
-  let snaps = sheetSnapPoints(sheet.getBoundingClientRect().height);
+export function createBottomSheet(sheet, handle, {
+  onStateChange,
+  initialState = "expanded",
+  peekHeight = 76
+} = {}) {
+  const getPeekHeight = () => typeof peekHeight === "function" ? peekHeight() : peekHeight;
+  let snaps = sheetSnapPoints(sheet.getBoundingClientRect().height, getPeekHeight());
   let snapIndex = 0;
   let offset = snaps[snapIndex];
   let pointer = null;
@@ -48,7 +53,7 @@ export function createBottomSheet(sheet, handle, { onStateChange, initialState =
 
   function refresh() {
     const name = stateName();
-    snaps = sheetSnapPoints(sheet.getBoundingClientRect().height);
+    snaps = sheetSnapPoints(sheet.getBoundingClientRect().height, getPeekHeight());
     snapIndex = name === "expanded" ? 0 : name === "collapsed" ? snaps.length - 1 : Math.min(1, snaps.length - 1);
     commit(snaps[snapIndex]);
   }
