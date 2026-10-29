@@ -448,13 +448,13 @@ button:disabled { cursor: wait; opacity: 0.55; }
   left: 44px;
   top: 21px;
   display: block;
-  width: 6px;
-  height: 6px;
-  transform: translate(-50%, -50%);
-  border: 1px solid #fff;
-  border-radius: 50%;
+  width: 16px;
+  height: 2px;
+  transform: translate(-50%, -50%) rotate(var(--bearing));
+  border: 0;
+  border-radius: 1px;
   background: #253238;
-  box-shadow: none;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 .motion-timeline-marker b {
   position: absolute;

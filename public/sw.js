@@ -1,4 +1,4 @@
-const VERSION = "rainy-v7";
+const VERSION = "rainy-v8";
 const APP_CACHE = `${VERSION}-app`;
 const DATA_CACHE = `${VERSION}-data`;
 const TILE_CACHE = `${VERSION}-tiles`;

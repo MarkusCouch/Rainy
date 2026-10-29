@@ -42,12 +42,11 @@ const elements = {
   speedValue: document.querySelector("#speedValue"),
   distanceValue: document.querySelector("#distanceValue"),
   locateBtn: document.querySelector("#locateBtn"),
-  centerBtn: document.querySelector("#centerBtn"),
   moreBtn: document.querySelector("#moreBtn"),
   chartBtn: document.querySelector("#chartBtn"),
   mapRadarTab: document.querySelector("#mapRadarTab"),
   fitArrowBtn: document.querySelector("#fitArrowBtn"),
-  refreshBtn: document.querySelector("#refreshBtn"),
+  refreshBtn: document.querySelector("#forecastRefreshBtn"),
   pickBtn: document.querySelector("#pickBtn"),
   bottomSheet: document.querySelector("#bottomSheet"),
   sheetHandle: document.querySelector("#sheetHandle"),
@@ -329,7 +328,6 @@ function setPosition(position, source, { center = false, accuracy = null } = {})
   const normalized = { lat: Number(position.lat), lng: Number(position.lng) };
   state.position = normalized;
   state.positionSource = source;
-  elements.centerBtn.hidden = false;
   const locationLabel = source === "manual" ? "Gewählter Standort" : "Mein Standort";
   elements.locationTitle.textContent = locationLabel;
   elements.forecastLocation.textContent = locationLabel;
@@ -418,7 +416,7 @@ function renderMotion(motion) {
   ]) {
     const icon = L.divIcon({
       className: "",
-      html: `<div class="motion-timeline-marker ${markerClass}${intermediate ? " is-intermediate" : ""}"><i></i><b>${label}</b></div>`,
+      html: `<div class="motion-timeline-marker ${markerClass}${intermediate ? " is-intermediate" : ""}" style="--bearing:${motion.bearing}deg"><i></i><b>${label}</b></div>`,
       iconSize: [88, 68],
       iconAnchor: [44, 21]
     });
@@ -670,9 +668,6 @@ map.on("click", async (event) => {
 map.on("zoomend", updateIntermediateMarkersVisibility);
 
 elements.locateBtn.addEventListener("click", locate);
-elements.centerBtn.addEventListener("click", () => {
-  if (state.position) map.setView(state.position, Math.max(8, map.getZoom()), { animate: true });
-});
 elements.moreBtn.addEventListener("click", () => state.picking ? stopPicking() : startPicking());
 elements.chartBtn.addEventListener("click", (event) => openForecast(event.currentTarget));
 elements.openForecastBtn.addEventListener("click", (event) => openForecast(event.currentTarget));
@@ -680,7 +675,6 @@ elements.closeForecastBtn.addEventListener("click", closeForecast);
 elements.forecastRadarBtn.addEventListener("click", closeForecast);
 elements.forecastRefreshBtn.addEventListener("click", () => updateRadar({ force: true }));
 elements.fitArrowBtn.addEventListener("click", () => fitMotionBounds(true));
-elements.refreshBtn.addEventListener("click", () => updateRadar({ force: true }));
 elements.pickBtn.addEventListener("click", () => state.picking ? stopPicking() : startPicking());
 
 document.addEventListener("keydown", (event) => {
