@@ -1,4 +1,4 @@
-const VERSION = "rainy-v9";
+const VERSION = "rainy-v10";
 const APP_CACHE = `${VERSION}-app`;
 const DATA_CACHE = `${VERSION}-data`;
 const TILE_CACHE = `${VERSION}-tiles`;
@@ -6,7 +6,7 @@ const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
-  "./manifest.webmanifest",
+  "./manifest.webmanifest?v=icons2",
   "./src/app.js",
   "./src/forecast.js",
   "./src/motion.js",
@@ -14,10 +14,15 @@ const APP_SHELL = [
   "./src/presentation.js",
   "./src/radar.js",
   "./src/sheet.js",
-  "./icons/icon-192.png?v=r1",
-  "./icons/icon-512.png?v=r1",
-  "./icons/apple-touch-icon-r.png",
-  "./icons/favicon-r.png"
+  "./assets/icons/icon-192.png",
+  "./assets/icons/icon-512.png",
+  "./assets/icons/icon-maskable-192.png",
+  "./assets/icons/icon-maskable-512.png",
+  "./assets/icons/apple-touch-icon.png",
+  "./assets/icons/favicon.ico",
+  "./assets/icons/favicon-32.png",
+  "./assets/icons/favicon-16.png",
+  "./apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (event) => {
