@@ -23,6 +23,7 @@ import {
   rainRateClass
 } from "./forecast.js";
 import { buildForecastPaths, forecastEvent } from "./presentation.js";
+import { chooseDisplayMotion } from "./wind.js";
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_VIEW = [51.16, 10.45];
@@ -414,9 +415,11 @@ function renderMotion(motion) {
     [geometry.point3, "+3 h", "tick-3", true],
     [geometry.point4, "+4 h", "tick-4", false]
   ]) {
+    const sourceLabel = motion.source === "wind" && markerClass === "tick-4"
+      ? '<small class="motion-source">Höhenwind</small>' : "";
     const icon = L.divIcon({
       className: "",
-      html: `<div class="motion-timeline-marker ${markerClass}${intermediate ? " is-intermediate" : ""}" style="--bearing:${motion.bearing}deg"><i></i><b>${label}</b></div>`,
+      html: `<div class="motion-timeline-marker ${markerClass}${intermediate ? " is-intermediate" : ""}" style="--bearing:${motion.bearing}deg"><i></i><b>${label}${sourceLabel}</b></div>`,
       iconSize: [88, 68],
       iconAnchor: [44, 21]
     });
@@ -543,13 +546,20 @@ async function updateRadar({ force = false } = {}) {
     await updateForecastData(metadata, latest, fields, motion);
     elements.motionTitle.textContent = forecastSummary(state.forecast);
 
-    if (!motion.ok) {
+    const displayMotion = await chooseDisplayMotion(motion, state.position);
+    if (!displayMotion) {
       clearMotion();
       elements.motionDetail.textContent = reasonText[motion.reason] ?? "Die Bewegung ist momentan nicht eindeutig.";
       return;
     }
 
-    renderMotion(motion);
+    renderMotion(displayMotion);
+    if (displayMotion.source === "wind") {
+      elements.movementTitle.hidden = false;
+      elements.movementTitle.textContent = "Höhenwind · Modellschätzung";
+      elements.motionDetail.textContent = "Ohne auswertbaren Radarregen zeigt der Pfeil den modellierten Wind in etwa 3 km Höhe. Die Stundenmarken zeigen dessen Wegstrecke, keine Regenvorhersage.";
+      return;
+    }
     const movementDirection = bearingToCompass(motion.bearing);
     const sourceDirection = bearingToCompass((motion.bearing + 180) % 360);
     elements.movementTitle.hidden = false;

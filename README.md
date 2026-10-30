@@ -13,6 +13,7 @@ Rainy ist eine mobile, installierbare Regenradar-PWA. Sie verwendet ausschließl
 - automatischer Kartenmaßstab, der die vollständige Vier-Stunden-Strecke zeigt
 - antippbare Regen-Silhouette in 15-Minuten-Schritten bis `+4 h`, inklusive geschätzter Regenrate in `mm/h`
 - minimalistischer Bewegungspfeil mit feiner Linie und schlichten Stundenmarken
+- bei zu wenig Radarregen: gleicher Pfeil aus modelliertem Höhenwind (700 hPa), sichtbar als „Höhenwind“ gekennzeichnet; der Regenverlauf bleibt unabhängig davon
 - freie Kartenfläche ohne Pull-Menü und pulsierender Standort
 - direkt lesbarer Regeneintritt bzw. Regenende, wenn die Radar-Hochrechnung dies hergibt
 - fester Intensitätsfarbverlauf und echte Lücken bei nicht verfügbaren Zukunftswerten
@@ -49,6 +50,7 @@ Danach wird jeder erfolgreiche Push auf `main` automatisch unter `https://markus
 ## Datenquellen
 
 - Radar: [RainViewer Weather Maps API](https://www.rainviewer.com/api.html)
+- Pfeil bei fehlenden Regenechos: [Open-Meteo Höhenwind](https://open-meteo.com/en/docs) auf 700 hPa (etwa 3 km Höhe), keine gemessene Regenzugrichtung. Bei fehlenden, veralteten oder windstillen Modelldaten bleibt der Standortpunkt sichtbar.
 - Basiskarte: [OpenFreeMap](https://openfreemap.org/) / [OpenStreetMap](https://www.openstreetmap.org/copyright)
 
 RainViewer benötigt für den öffentlichen Community-Zugang keinen API-Key. Die App ruft Metadaten und Kacheln direkt vom Endgerät ab; es gibt keinen eigenen Anwendungsserver.
@@ -56,6 +58,8 @@ RainViewer benötigt für den öffentlichen Community-Zugang keinen API-Key. Die
 ## Datenschutz
 
 Die Position wird nicht an Rainy oder einen eigenen Server übertragen. Sie wird nur lokal im Browser verwendet. Für die Bewegungsanalyse werden zentrierte Radarbildausschnitte direkt bei RainViewer abgerufen; dadurch erhält der Datenanbieter technisch die angefragten Kartenkoordinaten.
+
+Wenn Radarregen für einen Bewegungspfeil fehlt, werden die Standortkoordinaten zusätzlich an Open-Meteo übermittelt, um den Höhenwind für den gekennzeichneten Ersatzpfeil zu laden.
 
 ## Lizenz
 

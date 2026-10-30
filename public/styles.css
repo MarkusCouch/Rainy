@@ -477,6 +477,7 @@ button:disabled { cursor: wait; opacity: 0.55; }
   font-variant-numeric: tabular-nums;
 }
 .motion-timeline-marker.tick-1 { --node-color: var(--light); }
+.motion-source { display: block; margin-top: 5px; font-size: 9px; font-weight: 500; }
 .motion-timeline-marker.tick-2 { --node-color: var(--medium); }
 .motion-timeline-marker.tick-3 { --node-color: var(--heavy); }
 .motion-timeline-marker.tick-4 { --node-color: var(--extreme); }
