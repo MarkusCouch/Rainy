@@ -168,9 +168,19 @@
                       <stop offset="67%" stop-color="#596be6"></stop>
                       <stop offset="100%" stop-color="#a34de1"></stop>
                     </linearGradient>
+                    <linearGradient id="forecastFadeGradient" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0">
+                      <stop offset="0" stop-color="#fff" stop-opacity="1"></stop>
+                      <stop offset="0.5" stop-color="#fff" stop-opacity="1"></stop>
+                      <stop offset="1" stop-color="#fff" stop-opacity="0.3"></stop>
+                    </linearGradient>
+                    <mask id="forecastFade" maskUnits="userSpaceOnUse" x="-5" y="-5" width="110" height="110">
+                      <rect x="-5" y="-5" width="110" height="110" fill="url(#forecastFadeGradient)"></rect>
+                    </mask>
                   </defs>
-                  <path id="forecastAreaPath" class="forecast-area"></path>
-                  <path id="forecastLinePath" class="forecast-line"></path>
+                  <g mask="url(#forecastFade)">
+                    <path id="forecastAreaPath" class="forecast-area"></path>
+                    <path id="forecastLinePath" class="forecast-line"></path>
+                  </g>
                   <line id="forecastCursor" class="forecast-cursor" x1="0" x2="0" y1="4" y2="96"></line>
                 </svg>
                 <i id="forecastCursorDot" class="forecast-cursor-dot"></i>
@@ -185,7 +195,7 @@
           </div>
 
           <p id="forecastNotice" class="forecast-notice">
-            Aus dem aktuellen Radarbild entlang der gemessenen Zugrichtung berechnet – keine Wettermodell-Prognose.
+            Aus dem aktuellen Radarbild entlang der gemessenen Zugrichtung berechnet – keine Wettermodell-Prognose. Ab etwa +2 h wird die Hochrechnung deutlich unsicherer.
           </p>
         </div>
 

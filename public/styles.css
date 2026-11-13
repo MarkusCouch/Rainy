@@ -441,6 +441,7 @@ button:disabled { cursor: wait; opacity: 0.55; }
   width: 88px;
   height: 68px;
   pointer-events: none;
+  opacity: var(--fade, 1);
   transition: opacity 180ms ease, transform 180ms ease;
 }
 .motion-timeline-marker i {
@@ -482,7 +483,7 @@ button:disabled { cursor: wait; opacity: 0.55; }
 .motion-timeline-marker.tick-3 { --node-color: var(--heavy); }
 .motion-timeline-marker.tick-4 { --node-color: var(--extreme); }
 .motion-timeline-marker.is-intermediate { visibility: hidden; opacity: 0; transform: scale(0.72); }
-.show-intermediate-markers .motion-timeline-marker.is-intermediate { visibility: visible; opacity: 1; transform: scale(1); }
+.show-intermediate-markers .motion-timeline-marker.is-intermediate { visibility: visible; opacity: var(--fade, 1); transform: scale(1); }
 
 .picking #map { cursor: crosshair; }
 .picking .leaflet-container::after {
@@ -637,6 +638,27 @@ button:disabled { cursor: wait; opacity: 0.55; }
 .forecast-plot[data-class="medium"] .forecast-cursor-dot { background: var(--medium); }
 .forecast-plot[data-class="heavy"] .forecast-cursor-dot { background: var(--heavy); }
 .forecast-plot[data-class="extreme"] .forecast-cursor-dot { background: var(--extreme); }
+
+.forecast-plot[data-method="advection"]::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 34px; left: 50%; right: 0;
+  border-left: 1px dashed rgba(255, 255, 255, 0.2);
+  background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 6px, transparent 6px 12px);
+  pointer-events: none;
+}
+.forecast-plot[data-method="advection"]::before {
+  content: "Unsicherer Bereich";
+  position: absolute;
+  z-index: 1;
+  top: 10px; right: 12px;
+  color: #7f8d8b;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
 
 .forecast-samples { position: absolute; inset: 8px 0 35px; }
 .forecast-sample { position: absolute; top: 0; bottom: 0; min-width: 0; padding: 0; border: 0; background: transparent; cursor: pointer; }

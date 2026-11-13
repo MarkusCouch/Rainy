@@ -42,3 +42,18 @@ export function forecastEvent(forecast) {
   if (rain) return { kind: "starting", sample: rain };
   return { kind: firstGap < 0 ? "dry" : "partial-dry" };
 }
+
+export const FADE_START_MINUTES = 120;
+export const FADE_END_MINUTES = 240;
+export const FADE_MIN_OPACITY = 0.3;
+
+// 1 bis +2 h, danach linear bis FADE_MIN_OPACITY bei +4 h.
+export function uncertaintyOpacity(minutes) {
+  if (!Number.isFinite(minutes) || minutes <= FADE_START_MINUTES) return 1;
+  const t = Math.min(1, (minutes - FADE_START_MINUTES) / (FADE_END_MINUTES - FADE_START_MINUTES));
+  return 1 - t * (1 - FADE_MIN_OPACITY);
+}
+
+export function isUncertain(minutes) {
+  return Number.isFinite(minutes) && minutes > FADE_START_MINUTES;
+}
