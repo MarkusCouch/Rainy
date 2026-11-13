@@ -22,7 +22,7 @@ import {
   chooseForecastZoom,
   rainRateClass
 } from "./forecast.js";
-import { buildForecastPaths, forecastEvent } from "./presentation.js";
+import { buildForecastPaths, forecastEvent, isUncertain, uncertaintyOpacity } from "./presentation.js";
 import { chooseDisplayMotion } from "./wind.js";
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
@@ -210,7 +210,11 @@ function selectForecastSample(index) {
     ? `Jetzt · ${formatChartTime(sample.timestamp)}`
     : `${formatChartTime(sample.timestamp)} · ${formatForecastOffset(sample.minutes)}`;
   elements.forecastSelectedRate.textContent = formatRainRate(sample.rateMmh);
-  elements.forecastSelectedClass.textContent = rainClassText[sample.className] ?? "Radarwert";
+  const uncertain = state.forecast.method === "advection"
+    && isUncertain(sample.minutes)
+    && Number.isFinite(sample.rateMmh);
+  elements.forecastSelectedClass.textContent =
+    (rainClassText[sample.className] ?? "Radarwert") + (uncertain ? " · unsicher" : "");
   elements.forecastSamples.querySelectorAll(".forecast-sample").forEach((button, buttonIndex) => {
     const selected = buttonIndex === safeIndex;
     button.classList.toggle("is-selected", selected);
@@ -237,6 +241,7 @@ function renderForecast() {
   elements.forecastAreaPath.setAttribute("d", "");
   elements.forecastLinePath.setAttribute("d", "");
   elements.forecastCursorDot.hidden = true;
+  delete elements.forecastPlot.dataset.method;
 
   if (!forecast?.samples?.length) {
     elements.forecastSummary.textContent = state.loading ? "Verlauf wird berechnet …" : "Noch keine Radardaten";
@@ -253,6 +258,7 @@ function renderForecast() {
     ? forecast.status === "partial" ? "teilweise auswertbar" : "bis +4 h"
     : forecast.method === "dry" ? "aktuell kein Echo" : "nur aktueller Wert";
   elements.forecastEmpty.hidden = forecast.status !== "unavailable";
+  elements.forecastPlot.dataset.method = forecast.method;
 
   const buttons = document.createDocumentFragment();
   forecast.samples.forEach((sample, index) => {
@@ -379,26 +385,17 @@ function renderMotion(motion) {
   const timeline = Array.from({ length: 69 }, (_, index) => (
     destinationPoint(geometry.position, geometry.sourceBearing, motion.speedKmh * index / 16)
   ));
-  L.polyline(timeline, {
-    color: "#ffffff",
-    opacity: 0.7,
-    weight: 4,
-    lineCap: "round",
-    lineJoin: "round",
-    interactive: false
-  }).addTo(layer);
-
-  timeline.slice(0, -1).forEach((point, index) => {
-    const hour = Math.min(4, index / 16);
-    L.polyline([point, timeline[index + 1]], {
-      color: "#253238",
-      opacity: 0.9 - hour * 0.06,
-      weight: 2,
-      lineCap: "round",
-      lineJoin: "round",
-      interactive: false
-    }).addTo(layer);
-  });
+  // Erst alle Halos, dann alle Kerne; butt-Kappen vermeiden überlagerte "Perlen" bei Transparenz.
+  const segments = timeline.slice(0, -1).map((point, index) => ({
+    path: [point, timeline[index + 1]],
+    fade: uncertaintyOpacity((index * 60) / 16) // 16 Schritte pro Stunde
+  }));
+  for (const { path, fade } of segments) {
+    L.polyline(path, { color: "#ffffff", opacity: 0.7 * fade, weight: 4, lineCap: "butt", interactive: false }).addTo(layer);
+  }
+  for (const { path, fade } of segments) {
+    L.polyline(path, { color: "#253238", opacity: 0.9 * fade, weight: 2, lineCap: "butt", interactive: false }).addTo(layer);
+  }
 
   const arrowIcon = L.divIcon({
     className: "",
@@ -409,17 +406,18 @@ function renderMotion(motion) {
   L.marker(geometry.position, { icon: arrowIcon, interactive: false, keyboard: false, zIndexOffset: 1300 }).addTo(layer);
   state.userMarker?.setOpacity(0);
 
-  for (const [point, label, markerClass, intermediate] of [
-    [geometry.point1, "+1 h", "tick-1", true],
-    [geometry.point2, "+2 h", "tick-2", false],
-    [geometry.point3, "+3 h", "tick-3", true],
-    [geometry.point4, "+4 h", "tick-4", false]
+  for (const [point, label, markerClass, intermediate, minutes] of [
+    [geometry.point1, "+1 h", "tick-1", true, 60],
+    [geometry.point2, "+2 h", "tick-2", false, 120],
+    [geometry.point3, "+3 h", "tick-3", true, 180],
+    [geometry.point4, "+4 h", "tick-4", false, 240]
   ]) {
+    const fade = Math.max(0.6, uncertaintyOpacity(minutes)); // Labels bleiben lesbar
     const sourceLabel = motion.source === "wind" && markerClass === "tick-4"
       ? '<small class="motion-source">Höhenwind</small>' : "";
     const icon = L.divIcon({
       className: "",
-      html: `<div class="motion-timeline-marker ${markerClass}${intermediate ? " is-intermediate" : ""}" style="--bearing:${motion.bearing}deg"><i></i><b>${label}${sourceLabel}</b></div>`,
+      html: `<div class="motion-timeline-marker ${markerClass}${intermediate ? " is-intermediate" : ""}" style="--bearing:${motion.bearing}deg;--fade:${fade}"><i></i><b>${label}${sourceLabel}</b></div>`,
       iconSize: [88, 68],
       iconAnchor: [44, 21]
     });
