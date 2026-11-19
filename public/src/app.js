@@ -372,6 +372,21 @@ function clearMotion() {
   elements.movementTitle.hidden = true;
 }
 
+// Leaflet rundet Stützpunkte auf ganze Pixel; bei den kurzen Pfadsegmenten
+// wird daraus eine sichtbare Welle. Diese Variante projiziert subpixelgenau.
+const SmoothPolyline = L.Polyline.extend({
+  _projectLatlngs(latlngs, result, projectedBounds) {
+    if (!(latlngs[0] instanceof L.LatLng)) {
+      latlngs.forEach((ring) => this._projectLatlngs(ring, result, projectedBounds));
+      return;
+    }
+    const origin = this._map.getPixelOrigin();
+    const ring = latlngs.map((latlng) => this._map.project(latlng).subtract(origin));
+    ring.forEach((point) => projectedBounds.extend(point));
+    result.push(ring);
+  }
+});
+
 function renderMotion(motion) {
   clearMotion();
   const geometry = computeTimelineGeometry(state.position, motion.bearing, motion.speedKmh);
@@ -391,10 +406,10 @@ function renderMotion(motion) {
     fade: uncertaintyOpacity((index * 60) / 16) // 16 Schritte pro Stunde
   }));
   for (const { path, fade } of segments) {
-    L.polyline(path, { color: "#ffffff", opacity: 0.7 * fade, weight: 4, lineCap: "butt", interactive: false }).addTo(layer);
+    new SmoothPolyline(path, { color: "#ffffff", opacity: 0.7 * fade, weight: 4, lineCap: "butt", interactive: false }).addTo(layer);
   }
   for (const { path, fade } of segments) {
-    L.polyline(path, { color: "#253238", opacity: 0.9 * fade, weight: 2, lineCap: "butt", interactive: false }).addTo(layer);
+    new SmoothPolyline(path, { color: "#253238", opacity: 0.9 * fade, weight: 2, lineCap: "butt", interactive: false }).addTo(layer);
   }
 
   const arrowIcon = L.divIcon({
