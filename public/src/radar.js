@@ -19,6 +19,26 @@ export function radarTileUrl(host, frame, coords, size = 256) {
   return `${host}${frame.path}/${size}/${coords.z}/${coords.x}/${coords.y}/2/0_0.png`;
 }
 
+// RainViewer-Abdeckungsmaske: deckende Pixel = Radar vorhanden, transparent = keine Abdeckung.
+export function coverageTileUrl(host, coords, size = 256) {
+  return `${host}/v2/coverage/0/${size}/${coords.z}/${coords.x}/${coords.y}/0/0_0.png`;
+}
+
+export const COVERAGE_VEIL = [72, 82, 88, 92];
+
+// Kehrt die Maske um: Schleier nur dort, wo kein Radar verfügbar ist.
+export function veilCoverageImageData(imageData, veil = COVERAGE_VEIL) {
+  const { data } = imageData;
+  for (let i = 0; i < data.length; i += 4) {
+    const covered = data[i + 3] > 0;
+    data[i] = veil[0];
+    data[i + 1] = veil[1];
+    data[i + 2] = veil[2];
+    data[i + 3] = covered ? 0 : veil[3];
+  }
+  return imageData;
+}
+
 export function analysisImageUrl(host, frame, position, zoom = ANALYSIS_ZOOM) {
   const lat = Number(position.lat).toFixed(5);
   const lng = Number(position.lng).toFixed(5);
@@ -60,6 +80,44 @@ export async function loadAnalysisField(host, frame, position, zoom = ANALYSIS_Z
 
 export async function loadMotionFields(host, frames, position) {
   return Promise.all(frames.map((frame) => loadAnalysisField(host, frame, position)));
+}
+
+export function createCoverageLayer(L, host) {
+  const CoverageLayer = L.GridLayer.extend({
+    createTile(coords, done) {
+      const canvas = L.DomUtil.create("canvas", "rainy-coverage-tile");
+      canvas.width = 256;
+      canvas.height = 256;
+      canvas.setAttribute("role", "presentation");
+
+      // Bei Ladefehlern bleibt die Kachel leer: lieber kein Schleier als ein falscher.
+      fetch(coverageTileUrl(host, coords), { cache: "force-cache" })
+        .then(bitmapFromResponse)
+        .then((bitmap) => {
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+          context.imageSmoothingEnabled = false;
+          context.drawImage(bitmap, 0, 0, 256, 256);
+          bitmap.close?.();
+          const imageData = context.getImageData(0, 0, 256, 256);
+          context.putImageData(veilCoverageImageData(imageData), 0, 0);
+          done(null, canvas);
+        })
+        .catch((error) => done(error, canvas));
+
+      return canvas;
+    }
+  });
+
+  return new CoverageLayer({
+    tileSize: 256,
+    maxNativeZoom: 7,
+    maxZoom: 12,
+    minZoom: 3,
+    noWrap: true,
+    keepBuffer: 2,
+    updateWhenIdle: true,
+    className: "rainy-coverage-grid"
+  });
 }
 
 export function createRadarLayer(L, host, frame) {

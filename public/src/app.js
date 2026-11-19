@@ -3,6 +3,7 @@ import { maplibreGL } from "https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.1.
 import {
   ANALYSIS_SIZE,
   ANALYSIS_ZOOM,
+  createCoverageLayer,
   createRadarLayer,
   loadAnalysisField,
   loadMotionFields,
@@ -80,6 +81,8 @@ const state = {
   userMarker: null,
   accuracyCircle: null,
   radarLayer: null,
+  coverageLayer: null,
+  coverageHost: null,
   motionLayer: null,
   motionGeometry: null,
   forecast: null,
@@ -542,6 +545,12 @@ async function updateRadar({ force = false } = {}) {
     if (state.radarLayer) state.radarLayer.remove();
     state.radarLayer = createRadarLayer(L, metadata.host, latest).addTo(map);
     state.radarLayer.setZIndex(350);
+    if (state.coverageHost !== metadata.host) {
+      state.coverageLayer?.remove();
+      state.coverageLayer = createCoverageLayer(L, metadata.host).addTo(map);
+      state.coverageLayer.setZIndex(340);
+      state.coverageHost = metadata.host;
+    }
 
     elements.radarTime.textContent = `Radar ${formatRadarTime(latest.time)} · ${dataAgeMinutes(latest.time)} min alt`;
     elements.mapTime.textContent = formatClockTime(latest.time);
