@@ -19,18 +19,18 @@ export function radarTileUrl(host, frame, coords, size = 256) {
   return `${host}${frame.path}/${size}/${coords.z}/${coords.x}/${coords.y}/2/0_0.png`;
 }
 
-// RainViewer-Abdeckungsmaske: deckende Pixel = Radar vorhanden, transparent = keine Abdeckung.
+// RainViewer-Abdeckungsmaske: sichtbare Pixel = keine Abdeckung, transparent = Radar vorhanden.
 export function coverageTileUrl(host, coords, size = 256) {
   return `${host}/v2/coverage/0/${size}/${coords.z}/${coords.x}/${coords.y}/0/0_0.png`;
 }
 
-export const COVERAGE_VEIL = [72, 82, 88, 92];
+export const COVERAGE_VEIL = [246, 248, 249, 165];
 
-// Kehrt die Maske um: Schleier nur dort, wo kein Radar verfügbar ist.
+// Färbt die Maske einheitlich hell ein: Schleier nur dort, wo kein Radar verfügbar ist.
 export function veilCoverageImageData(imageData, veil = COVERAGE_VEIL) {
   const { data } = imageData;
   for (let i = 0; i < data.length; i += 4) {
-    const covered = data[i + 3] > 0;
+    const covered = data[i + 3] === 0;
     data[i] = veil[0];
     data[i + 1] = veil[1];
     data[i + 2] = veil[2];

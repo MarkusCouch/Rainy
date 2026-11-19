@@ -11,8 +11,8 @@ test("Abdeckungskachel nutzt den RainViewer-Coverage-Pfad", () => {
 
 test("Schleier liegt nur über Gebieten ohne Radarabdeckung", () => {
   const imageData = { data: new Uint8ClampedArray([
-    255, 255, 255, 80, // abgedeckt (halbtransparent)
-    0, 0, 0, 0 // keine Abdeckung
+    0, 0, 0, 0, // abgedeckt (transparent)
+    40, 40, 40, 80 // keine Abdeckung (in der Maske sichtbar)
   ]) };
   const { data } = veilCoverageImageData(imageData);
   assert.equal(data[3], 0);
